@@ -72,12 +72,13 @@ def upload_to_gcs(filename: str) -> str:
 )
 def remove_from_local(filename: str) -> None:
     """Removes a file from the local file system"""
-    print(f'Deleting file:\t{filename}')
+    print(f'INFO | Deleting file:\t{filename}')
     os.remove(filename)
+    print('INFO | Done!')
     
 # Write a flow function to fetch and upload taxi trip data for a given year and month
 @flow
-def elt_web_to_gcs(service: str, year: int, month: int, cleanup: bool = False):
+def elt_web_to_gcs(service: str, year: int, month: int):
     """Fetches and uploads taxi trip data for a given year and month"""
     # Fetch the data
     df, filename = fetch_dataset(service, year, month)
@@ -90,15 +91,16 @@ def elt_web_to_gcs(service: str, year: int, month: int, cleanup: bool = False):
 
     # Clean up the local file system
     remove_from_local(filename)
+
         
 
 if __name__ == '__main__':
     print()
     elt_web_to_gcs.serve(
-        name='ingest-taxi-trips-deployment',
+        name='elt-web-to-gcs',
         cron='0 5 1 * *',
         tags=['dev','ingestion'],
         description="Given a taxi service, year, and month; download and ingest month's trip data into our Data Lake on Google Cloud Storage.",
-        version="tutorial/deployments",
+        version="elt_flows/ingest_web_to_gcs",
     )
     print()
