@@ -111,13 +111,10 @@ def upload_file(file_name: str, bucket: str, object_name: str = None):
         return False
     return True
 
-def main():
-    """Main function"""
-    # Parse command line arguments
-    args = parse_args()
-
+def run_flow(service: str, year: int, month: int) -> None:
+    """Run the flow"""
     # Fetch data from url
-    df, filename = fetch_dataset(args.service, args.year, args.month)
+    df, filename = fetch_dataset(service, year, month)
 
     # Write the data to local file system
     filename = write_to_local(df, filename)
@@ -127,6 +124,14 @@ def main():
 
     # Clean up the local file system
     os.remove(filename)
+    
+def main():
+    """Main function"""
+    # Parse command line arguments
+    args = parse_args()
+    
+    # Run the flow
+    run_flow(args.service, args.year, args.month)
     
 
 if __name__ == '__main__':
