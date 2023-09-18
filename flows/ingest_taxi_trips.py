@@ -47,9 +47,11 @@ class ProgressPercentage(object):
 def get_args():
     """Parse command line arguments"""
     parser = ArgumentParser()
-    parser.add_argument('--service', type=str, default='green', help='Taxi service type')
-    parser.add_argument('--year', type=int, default=2019, help='Year of taxi trip data')
-    parser.add_argument('--month', type=int, default=1, help='Month of taxi trip data')
+    parser.add_argument('--service', type=str, default='yellow', help='Taxi service type')
+    parser.add_argument('--year', type=int, default=2023, help='Year of taxi trip data')
+    parser.add_argument('--month', type=int, default=2, help='Month of taxi trip data')
+    parser.add_argument('--start-year', type=int, default=None, dest='start_year', help='Start year of taxi trip data')
+    parser.add_argument('--end-year', type=int, default=None, dest='end_year', help='Start month of taxi trip data')
     return parser.parse_args()
 
 # Fetch dataset from url
@@ -60,9 +62,11 @@ def fetch_dataset(service: str, year: int, month: int) -> tuple[pd.DataFrame, st
     filename = os.path.basename(url)
 
     # Download data from url
-    date_fmt = dt.datetime(year,month,1).strftime('%B, %Y')
+    date_fmt = dt.datetime(year,month,1).strftime('%b, %Y')
     logger.info(f'Downloading {service} taxi trip data from {date_fmt}')
+    print()
     wget.download(url, filename)
+    print('\n')
     logger.info('Done!')
 
     return filename
@@ -98,8 +102,10 @@ def upload_to_s3(src_filename: str, dst_filename: str = None, bucket_name: str =
     # Upload file to S3 bucket
     logger.info(f'Uploading {src_filename} to s3://{bucket_name}/{dst_filename}')
     try:
+        print()
         s3.upload_file(src_filename, bucket_name, dst_filename,
                        Callback=ProgressPercentage(src_filename))
+        print('\n')
     except ClientError as e:
         logger.error(e)
         return False
@@ -125,7 +131,7 @@ def ingest_taxi_trips(service: str, year: int, month: int) -> None:
         filepath = compress_dataset(filename)
 
         # Delete uncompressed dataset
-        remove_local_file(filepath)
+        remove_local_file(filename)
 
         # Upload dataset to S3
         upload_to_s3(filepath, 'trip-data/'+filepath)
@@ -180,12 +186,14 @@ def main():
     # Parse command line arguments
     args = get_args()
 
-    if hasattr(args, 'month'):
+    if (args.start_year is None) and (args.end_year is None):
         # Run pipeline for a single month
         ingest_taxi_trips(args.service, args.year, args.month)
     else:
         # Run pipeline for a range of months
         ingest_several_taxi_trips(args.service, args.start_year, args.end_year)
+
+    
     
     
 if __name__ == '__main__':
